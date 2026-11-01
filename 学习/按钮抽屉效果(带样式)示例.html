@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>抽屉式按钮展开</title>
+    <style>
+        /* ---------- 全局重置 ---------- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #f0f2f5;
+            font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+        }
+
+        /* ---------- 抽屉容器 ---------- */
+        .drawer-container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            user-select: none;
+        }
+
+        /* ---------- 主按钮 ---------- */
+        .main-btn {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            border: none;
+            background: #ffffff;
+            color: #333;
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            line-height: 1;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+            transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+            z-index: 10;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .main-btn:hover {
+            background: #f5f7fa;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.16);
+            transform: scale(1.04);
+        }
+
+        .main-btn:active {
+            transform: scale(0.94);
+        }
+
+        .main-btn.open {
+            background: #e8ecf1;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.10);
+        }
+
+        /* ---------- 子按钮列表（抽屉主体） ---------- */
+        .drawer-list {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            margin-top: 6px;
+            padding: 8px 6px;
+            background: #ffffff;
+            border-radius: 18px;
+            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.10);
+            min-width: 180px;
+            /* 初始隐藏：高度为0，不可见，不可交互 */
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            transform: translateY(-12px) scaleY(0.92);
+            transform-origin: top center;
+            transition: max-height 0.45s cubic-bezier(0.34, 1.56, 0.64, 1),
+                opacity 0.35s ease,
+                transform 0.40s cubic-bezier(0.34, 1.56, 0.64, 1),
+                box-shadow 0.30s ease;
+            pointer-events: none;
+            /* 防止点击穿透 */;
+        }
+
+        /* 展开状态 */
+        .drawer-list.open {
+            max-height: 320px;
+            /* 足够容纳所有子按钮 + 内边距 */
+            opacity: 1;
+            transform: translateY(0) scaleY(1);
+            pointer-events: auto;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.14);
+        }
+
+        /* ---------- 每个子按钮 ---------- */
+        .sub-btn {
+            width: 100%;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 12px;
+            background: transparent;
+            color: #2c3e50;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: background 0.20s ease, transform 0.15s ease, opacity 0.30s ease, margin 0.30s ease;
+            /* 初始隐藏：透明度0，向上偏移，不可见 */
+            opacity: 0;
+            transform: translateY(-18px) scale(0.96);
+            pointer-events: none;
+            /* 由父容器控制点击 */;
+        }
+
+        /* 每个子按钮的延迟由 JS 动态设置，这里不再用 nth-child 固定 */
+
+        /* 子按钮显示状态 */
+        .sub-btn.visible {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: auto;
+        }
+
+        /* 子按钮悬停效果 */
+        .sub-btn:hover {
+            background: #f0f4fa;
+            transform: translateX(4px);
+        }
+
+        .sub-btn:active {
+            transform: scale(0.97);
+            background: #e6ecf4;
+        }
+
+        /* 子按钮图标（emoji） */
+        .sub-btn .icon {
+            font-size: 18px;
+            line-height: 1;
+            flex-shrink: 0;
+            width: 28px;
+            text-align: center;
+        }
+
+        .sub-btn .label {
+            flex: 1;
+            white-space: nowrap;
+        }
+
+        /* 子按钮之间的分割线（视觉分隔） */
+        .sub-btn:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            bottom: -3px;
+            left: 20px;
+            right: 20px;
+            height: 1px;
+            background: #edf0f5;
+            border-radius: 1px;
+        }
+
+        .sub-btn {
+            position: relative;
+        }
+
+        /* ---------- 子按钮点击反馈（模拟操作） ---------- */
+        .sub-btn .badge {
+            font-size: 11px;
+            background: #eef2f7;
+            color: #6b7a8f;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-weight: 400;
+            transition: background 0.20s ease;
+            margin-left: auto;
+        }
+
+        .sub-btn:hover .badge {
+            background: #dce3ed;
+        }
+
+        /* ---------- 辅助提示 ---------- */
+        .hint {
+            margin-top: 16px;
+            font-size: 13px;
+            color: #a0aec0;
+            letter-spacing: 0.3px;
+            opacity: 0;
+            transition: opacity 0.5s ease 0.3s;
+        }
+
+        .hint.show {
+            opacity: 1;
+        }
+
+        /* ---------- 响应式适配 ---------- */
+        @media (max-width: 480px) {
+            .drawer-list {
+                min-width: 150px;
+                border-radius: 14px;
+                padding: 6px 4px;
+            }
+
+            .sub-btn {
+                padding: 8px 14px;
+                font-size: 14px;
+            }
+
+            .sub-btn .icon {
+                font-size: 16px;
+                width: 24px;
+            }
+
+            .main-btn {
+                width: 48px;
+                height: 48px;
+                font-size: 24px;
+            }
+        }
+
+        /* ---------- 深色模式适配（可选） ---------- */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: #1a1d23;
+            }
+
+            .main-btn {
+                background: #2d3138;
+                color: #e8edf4;
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.40);
+            }
+
+            .main-btn:hover {
+                background: #383d46;
+                box-shadow: 0 6px 24px rgba(0, 0, 0, 0.50);
+            }
+
+            .main-btn.open {
+                background: #3a3f48;
+            }
+
+            .drawer-list {
+                background: #262b33;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.50);
+            }
+
+            .drawer-list.open {
+                box-shadow: 0 12px 48px rgba(0, 0, 0, 0.60);
+            }
+
+            .sub-btn {
+                color: #dce3ec;
+            }
+
+            .sub-btn:hover {
+                background: #323841;
+            }
+
+            .sub-btn:active {
+                background: #3c434e;
+            }
+
+            .sub-btn:not(:last-child)::after {
+                background: #323841;
+            }
+
+            .sub-btn .badge {
+                background: #323841;
+                color: #9aabbf;
+            }
+
+            .sub-btn:hover .badge {
+                background: #3e4550;
+            }
+
+            .hint {
+                color: #6b7a8f;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="drawer-container">
+        <!-- 主按钮：··· -->
+        <button class="main-btn" id="mainBtn" aria-label="展开菜单">···</button>
+
+        <!-- 子按钮列表（抽屉） -->
+        <div class="drawer-list" id="drawerList">
+            <!-- 子按钮由 JavaScript 动态生成，便于自定义 -->
+            <!-- 但也可以直接写静态 HTML，这里采用 JS 渲染以保持灵活 -->
+        </div>
+
+        <!-- 提示文字（仅演示） -->
+        <div class="hint" id="hint">点击子按钮体验反馈</div>
+    </div>
+
+    <script>
+        (function() {
+            'use strict';
+
+            // ---------- 配置数据 ----------
+            // 修改此数组即可自定义子按钮的 图标、文字、标识
+            const SUB_ITEMS = [
+                { icon: '📊', label: '数据看板', badge: '实时' },
+                { icon: '📝', label: '内容管理', badge: '24篇' },
+                { icon: '👥', label: '用户管理', badge: '1.2k' },
+                { icon: '⚙️', label: '系统设置', badge: 'v3.0' },
+            ];
+
+            // 动画间隔（每个子按钮出现的延迟间隔，单位 ms）
+            const ANIMATION_INTERVAL = 80;
+
+            // ---------- DOM 引用 ----------
+            const mainBtn = document.getElementById('mainBtn');
+            const drawerList = document.getElementById('drawerList');
+            const hint = document.getElementById('hint');
+
+            // ---------- 状态 ----------
+            let isOpen = false;
+            let isAnimating = false; // 防止动画冲突
+            let subButtons = [];
+
+            // ---------- 渲染子按钮 ----------
+            function renderSubItems() {
+                drawerList.innerHTML = '';
+                subButtons = [];
+
+                SUB_ITEMS.forEach((item, index) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'sub-btn';
+                    // 每个子按钮独立设置 transition-delay，但由 JS 控制 visible 类，这里统一延迟为 0
+                    btn.style.transitionDelay = '0s';
+                    btn.dataset.index = index;
+
+                    // 内部结构
+                    btn.innerHTML = `
+                        <span class="icon">${item.icon}</span>
+                        <span class="label">${item.label}</span>
+                        <span class="badge">${item.badge}</span>
+                    `;
+
+                    // 点击子按钮的反馈
+                    btn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        const label = this.querySelector('.label').textContent;
+                        showToast(`📌 点击了「${label}」`);
+                        // 实际项目中可在此执行对应操作
+                    });
+
+                    drawerList.appendChild(btn);
+                    subButtons.push(btn);
+                });
+            }
+
+            // ---------- 轻提示（Toast） ----------
+            let toastTimer = null;
+
+            function showToast(msg) {
+                // 创建或获取 toast 元素
+                let toast = document.getElementById('toast');
+                if (!toast) {
+                    toast = document.createElement('div');
+                    toast.id = 'toast';
+                    toast.style.cssText = `
+                        position: fixed;
+                        bottom: 40px;
+                        left: 50%;
+                        transform: translateX(-50%) translateY(20px);
+                        background: #2d3138;
+                        color: #f0f4fa;
+                        padding: 12px 28px;
+                        border-radius: 14px;
+                        font-size: 15px;
+                        font-weight: 500;
+                        box-shadow: 0 8px 32px rgba(0,0,0,0.30);
+                        opacity: 0;
+                        transition: opacity 0.35s ease, transform 0.35s ease;
+                        pointer-events: none;
+                        z-index: 999;
+                        font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+                        max-width: 90vw;
+                        text-align: center;
+                    `;
+                    document.body.appendChild(toast);
+                }
+
+                // 更新内容
+                toast.textContent = msg;
+
+                // 清除之前的定时器
+                if (toastTimer) {
+                    clearTimeout(toastTimer);
+                    toastTimer = null;
+                }
+
+                // 显示
+                toast.style.opacity = '1';
+                toast.style.transform = 'translateX(-50%) translateY(0)';
+
+                // 2.5 秒后消失
+                toastTimer = setTimeout(() => {
+                    toast.style.opacity = '0';
+                    toast.style.transform = 'translateX(-50%) translateY(20px)';
+                    toastTimer = null;
+                }, 2500);
+            }
+
+            // ---------- 核心：展开 / 收起 ----------
+            function toggleDrawer() {
+                // 如果正在动画，忽略本次点击
+                if (isAnimating) return;
+
+                if (isOpen) {
+                    closeDrawer();
+                } else {
+                    openDrawer();
+                }
+            }
+
+            // 展开
+            function openDrawer() {
+                if (isOpen) return;
+                isAnimating = true;
+
+                // 1. 先让列表容器展开（max-height 过渡）
+                drawerList.classList.add('open');
+
+                // 2. 逐个显示子按钮
+                const total = subButtons.length;
+                let delay = 0;
+
+                subButtons.forEach((btn, index) => {
+                    // 先重置状态（确保从隐藏开始）
+                    btn.classList.remove('visible');
+                    // 强制重排
+                    void btn.offsetWidth;
+
+                    // 按顺序延迟显示
+                    setTimeout(() => {
+                        btn.classList.add('visible');
+                    }, delay);
+                    delay += ANIMATION_INTERVAL;
+                });
+
+                // 3. 全部显示完成后，解锁动画状态
+                setTimeout(() => {
+                    isAnimating = false;
+                    isOpen = true;
+                    mainBtn.classList.add('open');
+                    hint.classList.add('show');
+                }, delay + 50);
+
+                // 更新按钮状态（视觉反馈）
+                mainBtn.setAttribute('aria-expanded', 'true');
+            }
+
+            // 收起
+            function closeDrawer() {
+                if (!isOpen) return;
+                isAnimating = true;
+
+                const total = subButtons.length;
+
+                // 1. 从最后一个开始，逐个隐藏子按钮
+                let delay = 0;
+                for (let i = total - 1; i >= 0; i--) {
+                    const btn = subButtons[i];
+                    // 确保是可见的
+                    if (btn.classList.contains('visible')) {
+                        setTimeout(() => {
+                            btn.classList.remove('visible');
+                        }, delay);
+                        delay += ANIMATION_INTERVAL;
+                    }
+                }
+
+                // 2. 所有子按钮隐藏后，收起列表容器
+                setTimeout(() => {
+                    drawerList.classList.remove('open');
+                    mainBtn.classList.remove('open');
+                    hint.classList.remove('show');
+                    isOpen = false;
+                    isAnimating = false;
+                    mainBtn.setAttribute('aria-expanded', 'false');
+                }, delay + 50);
+            }
+
+            // ---------- 点击外部收起（增强体验） ----------
+            function handleOutsideClick(e) {
+                const container = document.querySelector('.drawer-container');
+                if (isOpen && !container.contains(e.target)) {
+                    closeDrawer();
+                }
+            }
+
+            // ---------- 键盘辅助（ESC 收起） ----------
+            function handleKeydown(e) {
+                if (e.key === 'Escape' && isOpen) {
+                    closeDrawer();
+                    mainBtn.focus();
+                }
+            }
+
+            // ---------- 初始化 ----------
+            function init() {
+                renderSubItems();
+
+                // 主按钮点击
+                mainBtn.addEventListener('click', toggleDrawer);
+
+                // 点击外部收起
+                document.addEventListener('click', handleOutsideClick);
+
+                // ESC 键收起
+                document.addEventListener('keydown', handleKeydown);
+
+                // 初始提示隐藏
+                hint.classList.remove('show');
+
+                // 设置 aria 属性
+                mainBtn.setAttribute('aria-expanded', 'false');
+                mainBtn.setAttribute('aria-haspopup', 'true');
+
+                console.log('✅ 抽屉组件已初始化，子按钮数量：', SUB_ITEMS.length);
+            }
+
+            // DOM 加载完成后初始化
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', init);
+            } else {
+                init();
+            }
+
+        })();
+    </script>
+
+</body>
+</html>

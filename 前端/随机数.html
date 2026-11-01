@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>随机数骰子工具</title>
+</head>
+<body>
+    <h1 style="text-align : center;">随机数</h1>
+    <div style="text-align : center;">
+        <form id="投骰子">
+            <label for="用户名输入">用户名：</label>
+                <input type="text" id="用户名输入" name="用户名">
+            <br>
+            <label for="投掷个数输入">骰子个数：</label>
+                <input type="number" id="投掷个数输入" name="投掷个数">
+            <label for="骰子面数输入">骰子面数：</label>
+                <input type="number" id="骰子面数输入" name="骰子面数">
+            <input type="submit" value="投掷">                     
+        </form>
+        <hr>
+    </div>
+    <div id="投掷纪录" style="width: 700px; height: 1000px;margin: 20px auto ;"></div>
+
+<script>
+    const 投掷纪录容器 = document.getElementById("投掷纪录");
+    function 渲染历史记录(历史记录) {
+        let html = '<ul style="list-style: none; padding: 0;">'
+        历史记录.forEach(记录 => {
+            html += `<li style="border-bottom: 1px solid #ccc; padding: 3px;">${记录}</li>`
+        });
+        html += `</ul>`;
+        投掷纪录容器.innerHTML = html;
+    };
+    const 长连接 = new EventSource("/DingYueLiShi");
+    长连接.onmessage = function(事件) {
+        try{
+            const 服务器要求 = JSON.parse(事件.data);
+            if (服务器要求.类型 === "初始化" || 服务器要求.类型 === "更新历史"){ //其实这一步完全没必要，因为我们仅有着这两种状态，而且目的都是更新历史记录，所以在后端甚至也没有写类型的必要。但当请求种类多了之后会有用，属于是为以后铺路。
+                渲染历史记录(服务器要求.数据);
+            }
+        } catch (err) {
+        console.error("解析推送数据失败",err)
+    }};
+
+  document.getElementById('投骰子').addEventListener("submit",async(event) => {
+    event.preventDefault(); 
+    //将用户的输入打包发给后端
+    const 用户名 = document.getElementById("用户名输入").value;
+    const 投掷个数 = parseInt(document.getElementById('投掷个数输入').value);
+    const 骰子面数 = parseInt(document.getElementById("骰子面数输入").value);
+    const 请求 = {
+        用户名: 用户名 ,
+        投掷个数: 投掷个数 ,
+        骰子面数: 骰子面数
+    }
+    try{
+        const 响应 = await fetch("/roll",{
+            method:"POST" ,
+            headers:{"Content-Type":"application/json"} ,
+            body:JSON.stringify(请求)
+        });
+        const 投掷结果 = await 响应.json();
+        if (投掷结果.code === 200){
+        } else {
+            alert(投掷结果.message);
+        }
+    }catch(error){
+        console.error("请求失败",error);
+        alert("提交失败。请联系开发者解决")
+    }
+});
+</script>
+</body>
+</html>

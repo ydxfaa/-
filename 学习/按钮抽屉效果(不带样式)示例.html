@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>抽屉按钮效果</title>
+    <style>
+        /* ========== 只做必要布局，不做任何美化 ========== */
+
+        /* 容器：让 "···" 按钮和子按钮垂直排列 */
+        #container {
+            display: inline-block;
+            /* 随内容宽度 */;
+        }
+
+        /* 子按钮容器：垂直排列，每个子项占一行 */
+        #drawer {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            /* 靠左对齐 */;
+        }
+
+        /* 每个子项：用 div 包裹 button，控制动画 */
+        .sub-item {
+            /* 初始状态：隐藏 */
+            max-height: 0;
+            opacity: 0;
+            transform: translateY(-12px);
+            overflow: hidden;
+
+            /* 过渡动画：高度 + 透明度 + 位移 */
+            transition:
+                max-height 0.35s ease,
+                opacity 0.35s ease,
+                transform 0.35s ease;
+
+            /* 每个子项之间留点空隙，看得清楚 */
+            margin: 2px 0;
+        }
+
+        /* 展开状态 */
+        .sub-item.open {
+            max-height: 60px;
+            /* 足够容纳默认按钮 */
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* 子项里的按钮：默认样式，不加任何修饰 */
+        .sub-item button {
+            /* 什么都不改，保持浏览器默认 */
+            display: block;
+            /* 让按钮宽度自适应内容 */;
+        }
+
+        /* "···" 按钮：也不加任何样式，纯默认 */
+        #toggleBtn {
+            /* 保持默认 */;
+        }
+
+        /* 可选：加一条分割线，让 "···" 和子按钮区分开（非美化，仅辅助观察） */
+        /* 但用户说 "越简单越好"，所以不加任何额外装饰 */
+    </style>
+</head>
+<body>
+
+    <!-- ========== HTML 结构 ========== -->
+    <div id="container">
+        <!-- "···" 按钮 -->
+        <button id="toggleBtn">···</button>
+
+        <!-- 子按钮列表（抽屉内容） -->
+        <div id="drawer">
+            <div class="sub-item"><button>子按钮 1</button></div>
+            <div class="sub-item"><button>子按钮 2</button></div>
+            <div class="sub-item"><button>子按钮 3</button></div>
+            <div class="sub-item"><button>子按钮 4</button></div>
+            <div class="sub-item"><button>子按钮 5</button></div>
+        </div>
+    </div>
+
+    <!-- ========== JavaScript ========== -->
+    <script>
+        (function() {
+            // 获取元素
+            const toggleBtn = document.getElementById('toggleBtn');
+            const subItems = document.querySelectorAll('.sub-item');
+
+            // 状态：当前是否展开
+            let isOpen = false;
+            // 延迟间隔（秒）
+            const DELAY_STEP = 0.12;
+            // 动画总时长（秒），与 CSS 中的 transition-duration 保持一致
+            const DURATION = 0.35;
+
+            // 点击 "···" 按钮
+            toggleBtn.addEventListener('click', function() {
+                // 切换状态
+                isOpen = !isOpen;
+                const count = subItems.length;
+
+                // 遍历每个子项，设置不同的 transition-delay
+                subItems.forEach((item, index) => {
+                    if (isOpen) {
+                        // ----- 展开：正序延迟（第一个先动） -----
+                        // 延迟 = index * DELAY_STEP
+                        item.style.transitionDelay = (index * DELAY_STEP) + 's';
+                        // 添加 open 类 → 触发动画
+                        item.classList.add('open');
+                    } else {
+                        // ----- 收起：逆序延迟（最后一个先收） -----
+                        // 延迟 = (count - 1 - index) * DELAY_STEP
+                        const delay = (count - 1 - index) * DELAY_STEP;
+                        item.style.transitionDelay = delay + 's';
+                        // 移除 open 类 → 触发收起动画
+                        item.classList.remove('open');
+                    }
+                });
+            });
+
+            // ===== 额外细节：防止快速点击时动画错乱 =====
+            // 在动画进行期间，禁用 "···" 按钮，避免冲突
+            // 方法：监听过渡开始和结束事件，控制 disabled 状态
+            // 但为了 "越简单越好"，这里不做防抖，让用户自行体验
+            // 如果用户快速点击，动画会自然排队，但可能会有短暂闪烁
+            // 简单处理：用定时器锁定，但没必要，保持最简
+
+            // 可选：点击时如果动画未结束，忽略此次点击
+            // 但为了简单，不做任何限制
+
+            // ===== 额外细节：初始状态为收起 =====
+            // 默认所有子项都没有 open 类，所以是收起状态
+            // 但确保 transition-delay 被重置
+            subItems.forEach((item) => {
+                item.style.transitionDelay = '0s';
+            });
+
+            // 控制台提示
+            console.log('抽屉按钮已加载。点击 "···" 展开/收起子按钮。');
+        })();
+    </script>
+
+</body>
+</html>

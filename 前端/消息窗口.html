@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel ="stylesheet" href="./消息窗口.css">
+    <title>消息窗口</title>
+</head>
+<body>
+    <div style="background-color:red; height:50px; display:flex; justify-content: flex-end;">
+        <button id="更多按钮" style="height: 50px;width: 70px;font-size: 30px;">
+           ···  <!--后面这个···将成为"更多"选项-->
+        </button>
+        <div id="更多子按钮容器">
+            <div class="子按钮选项"><button class="更多子按钮">日志</button></div>
+            <div class="子按钮选项"><button class="更多子按钮">帮助</button></div>
+        </div>
+    </div>
+    <hr>
+    <script>
+        const 更多按钮 = document.getElementById("更多按钮");
+        const 更多按钮子项集 = document.querySelectorAll(".子按钮选项");
+        let 按钮打开 = false;
+        const 更多按钮子项弹出间隔 = 0.1;
+        更多按钮.addEventListener("click",function(){
+            按钮打开 = !按钮打开
+            const 按钮数量 = 更多按钮子项集.length;
+            更多按钮子项集.forEach((i,j) =>{
+                if (按钮打开) {
+                    i.style.transitionDelay = (j*更多按钮子项弹出间隔)+"s";
+                    i.classList.add("open");
+                } else {
+                    i.style.transitionDelay = ((按钮数量-1-j)*更多按钮子项弹出间隔)+"s";
+                    i.classList.remove("open");
+                }
+            });
+        });
+        更多按钮子项集.forEach(i => {
+            i.style.transitionDelay = '0s';
+        });
+    </script>
+</body>
+</html>

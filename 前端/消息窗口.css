@@ -1,0 +1,38 @@
+.更多子按钮 {
+    font-size: 20px;
+}
+#更多子按钮容器 {
+    position: absolute;           /* 绝对定位，脱离文档流 */
+    top: 58px;                    /* 紧贴红色条底部 */
+    right: 13px;                  /* 与按钮右对齐（可根据需要调整） */
+    display: flex;                /* 内部子项垂直排列 */
+    flex-direction: column;       /* 垂直排列 */
+    align-items: flex-start;      /* 子项左对齐 */
+    /* 背景色透明，不遮挡下方内容 */
+    background-color: transparent;
+    /* 不加边框、阴影，保持极简 */
+}
+.子按钮选项 {
+    /* 初始状态：完全折叠 */
+    max-height: 0;                /* 高度为0，隐藏 */
+    opacity: 0;                   /* 完全透明 */
+    transform: translateY(-10px); /* 向上偏移一点，更有“抽出”感 */
+    overflow: hidden;             /* 内容溢出隐藏 */
+
+    /* 过渡动画：高度、透明度、位移，时长0.35秒，缓动函数默认 ease */
+    transition:
+        max-height 0.2s ease,
+        opacity 0.2s ease,
+        transform 0.2s ease;
+
+    /* 每个子项之间留一点间隙，视觉清晰 */
+    margin: 5px 0;
+}
+
+/* ========== 展开状态（由 JS 添加 .open 类触发） ========== */
+.子按钮选项.open {
+    top: 50px;
+    max-height: 60px;             /* 足够容纳按钮高度（按钮默认约30px） */
+    opacity: 1;                   /* 完全可见 */
+    transform: translateY(0);     /* 归位 */
+}
